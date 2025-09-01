@@ -1,0 +1,60 @@
+---
+services:
+  grafana:
+    image: docker.io/grafana/grafana-oss:12.1.1
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+  loki:
+    container_name: loki
+    image: grafana/loki:3.5.3
+    command: "-config.file=/etc/loki/config.yaml"
+    ports:
+      - "3100"
+    volumes:
+      - ./loki_config.yml:/etc/loki/config.yaml:ro
+      - loki_data:/loki:rw
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.10.2
+    container_name: alloy
+    hostname: alloy.gg
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    ports:
+      - "12345:12345"
+    volumes:
+      - ./config.alloy:/etc/alloy/config.alloy
+      - alloy_data:/var/lib/alloy/data
+      - /:/rootfs:ro
+      - /run:/run:ro
+      - /var/log:/var/log:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker/:ro
+      - /run/udev/data:/run/udev/data:ro
+    restart: unless-stopped
+    depends_on:
+      - loki
+
+  testapp:
+    build:
+      context: ./testapp
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    depends_on:
+      - alloy
+    labels:
+      - alloy.enabled=true
+      - alloy.service.name=testapp
+
+volumes:
+  alloy_data:
+    driver: local
+  loki_data:
+    driver: local
+  grafana_data:
+    driver: local

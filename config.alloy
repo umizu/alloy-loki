@@ -12,18 +12,28 @@ loki.source.docker "default" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.docker.containers.targets
   relabel_rules = discovery.relabel.logs_integrations_docker.rules
-  forward_to = [loki.write.default.receiver]
+  forward_to = [loki.process.default.receiver]
 }
 
 discovery.relabel "logs_integrations_docker" {
   targets = []  
-  rule { // convert this label to structured metadata
+  rule {
     source_labels = ["__meta_docker_container_id"]
     target_label = "container_id"
   }
   rule {
     source_labels = ["__meta_docker_container_label_alloy_service_name"]
     target_label = "service_name"
+  }
+}
+
+loki.process "default" {
+  forward_to = [loki.write.default.receiver]
+
+  stage.structured_metadata {
+    values = {
+      container_id  = "",
+    }
   }
 }
 

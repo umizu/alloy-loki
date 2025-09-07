@@ -19,6 +19,8 @@ services:
     restart: unless-stopped
     depends_on:
       - loki
+    networks:
+      - customnet
   grafana:
     image: docker.io/grafana/grafana-oss:12.1.1
     container_name: grafana
@@ -27,6 +29,8 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     restart: unless-stopped
+    networks:
+      - customnet
   loki:
     image: grafana/loki:3.5.3
     container_name: loki
@@ -64,9 +68,13 @@ services:
     ports:
       - "8081:80"
     networks:
-      customnet:
-        # aliases:
-        #   - loki
+      - customnet
+  origin:
+    image: nginx:alpine
+    ports:
+      - "8082:80"
+    networks:
+      - customnet
         
 
 volumes:

@@ -8,7 +8,7 @@ services:
     ports:
       - "12345:12345"
     volumes:
-      - ./config.alloy:/etc/alloy/config.alloy
+      - ./config/config.alloy:/etc/alloy/config.alloy
       - alloy_data:/var/lib/alloy/data
       - /:/rootfs:ro
       - /run:/run:ro
@@ -19,7 +19,6 @@ services:
     restart: unless-stopped
     depends_on:
       - loki
-
   grafana:
     image: docker.io/grafana/grafana-oss:12.1.1
     container_name: grafana
@@ -33,11 +32,13 @@ services:
     container_name: loki
     command: "-config.file=/etc/loki/config.yaml"
     ports:
-      - "3100"
+      - "3100:3100"
     volumes:
-      - ./loki_config.yml:/etc/loki/config.yaml:ro
+      - ./config/loki.yml:/etc/loki/config.yaml:ro
       - loki_data:/loki:rw
     restart: unless-stopped
+    networks:
+      - customnet
 
   testapp:
     container_name: testapp
@@ -51,8 +52,28 @@ services:
     labels:
       - alloy.enabled=true
       - alloy.service.name=testapp
+    networks:
+      - customnet
+  
+  proxy:
+    image: nginx:alpine
+    container_name: proxy
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./certs:/etc/nginx/certs
+    ports:
+      - "8081:80"
+    networks:
+      customnet:
+        # aliases:
+        #   - loki
+        
 
 volumes:
   alloy_data:
   loki_data:
   grafana_data:
+
+networks:
+  customnet:
+    driver: bridge

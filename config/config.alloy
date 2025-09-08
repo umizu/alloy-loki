@@ -49,10 +49,12 @@ loki.process "default" {
 
 loki.write "default" {
   endpoint {
-    url = "http://proxy/loki/api/v1/push"
-    // tls_config {
-      // insecure_skip_verify = true
-    // }
+    url = "https://proxy:443/loki/api/v1/push"
+
+    tls_config {
+      ca_file = "/etc/certs/example.crt"
+      server_name = "proxy" // san
+    }
   }
   
   external_labels = {}

@@ -1,5 +1,14 @@
 ---
 services:
+  cert-gen:
+    image: alpine/openssl:latest
+    container_name: cert-gen
+    volumes:
+      - ./certs:/certs
+      - ./generate-certs.sh:/usr/local/bin/generate-certs.sh:ro
+    entrypoint: ["/bin/sh", "-c", "/usr/local/bin/generate-certs.sh"]
+    restart: "no"
+
   alloy:
     image: grafana/alloy:v1.10.2
     container_name: alloy
@@ -8,7 +17,8 @@ services:
     ports:
       - "12345:12345"
     volumes:
-      - ./config.alloy:/etc/alloy/config.alloy
+      - ./certs:/etc/certs:ro
+      - ./config/config.alloy:/etc/alloy/config.alloy
       - alloy_data:/var/lib/alloy/data
       - /:/rootfs:ro
       - /run:/run:ro
@@ -17,17 +27,21 @@ services:
       - /var/lib/docker/:/var/lib/docker/:ro
       - /run/udev/data:/run/udev/data:ro
     restart: unless-stopped
+    networks:
+      - customnet
     depends_on:
       - loki
-
+      - cert-gen
   grafana:
     image: docker.io/grafana/grafana-oss:12.1.1
     container_name: grafana
     ports:
-      - "3000:3000"
+      - "9051:3000"
     volumes:
       - grafana_data:/var/lib/grafana
     restart: unless-stopped
+    networks:
+      - customnet
   loki:
     image: grafana/loki:3.5.3
     container_name: loki
@@ -35,9 +49,11 @@ services:
     ports:
       - "3100"
     volumes:
-      - ./loki_config.yml:/etc/loki/config.yaml:ro
+      - ./config/loki.yml:/etc/loki/config.yaml:ro
       - loki_data:/loki:rw
     restart: unless-stopped
+    networks:
+      - customnet
 
   testapp:
     container_name: testapp
@@ -45,14 +61,34 @@ services:
       context: ./testapp
       dockerfile: Dockerfile
     ports:
-      - "9000:9000"
+      - "9050:9050"
     depends_on:
       - alloy
     labels:
       - alloy.enabled=true
       - alloy.service.name=testapp
+    networks:
+      - customnet
+
+  proxy:
+    image: nginx:alpine
+    container_name: proxy
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "443"
+    networks:
+      - customnet
+    depends_on:
+      - loki
+      - cert-gen
 
 volumes:
   alloy_data:
   loki_data:
   grafana_data:
+
+networks:
+  customnet:
+    driver: bridge

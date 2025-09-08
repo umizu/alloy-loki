@@ -34,14 +34,6 @@ discovery.relabel "logs_integrations_docker" {
 loki.process "default" {
   forward_to = [loki.write.default.receiver]
 
-  // stage.json {
-  //   expressions = { "level" = "" }
-  // }
-
-  // stage.labels {
-  //   values = { "level" = "" }
-  // }
-
   stage.structured_metadata {
     values = {
       container_id  = "",
@@ -57,7 +49,16 @@ loki.process "default" {
 
 loki.write "default" {
   endpoint {
-    url = "http://loki:3100/loki/api/v1/push"
+    url = "https://proxy:443/loki/api/v1/push"
+
+    tls_config {
+      ca_file = "/etc/certs/example-root.crt"
+      server_name = "proxy" // san
+
+      cert_file = "/etc/certs/alloy.crt"
+      key_file = "/etc/certs/alloy.key"
+
+      min_version = "TLS13"
+    }
   }
-  external_labels = {}
 }

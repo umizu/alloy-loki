@@ -8,7 +8,7 @@ services:
     ports:
       - "12345:12345"
     volumes:
-      - ./certs/example-root.crt:/etc/certs/example-root.crt
+      - ./certs:/etc/certs:ro
       - ./config/config.alloy:/etc/alloy/config.alloy
       - alloy_data:/var/lib/alloy/data
       - /:/rootfs:ro
@@ -20,6 +20,7 @@ services:
     restart: unless-stopped
     depends_on:
       - loki
+      - cert-gen
     networks:
       - customnet
   grafana:
@@ -59,22 +60,30 @@ services:
       - alloy.service.name=testapp
     networks:
       - customnet
-  
+
   proxy:
     image: nginx:alpine
     container_name: proxy
     volumes:
-      - ./config/nginx.conf:/etc/nginx/nginx.conf
-      - ./certs/proxy.crt:/etc/nginx/certs/proxy.crt
-      - ./certs/proxy.key:/etc/nginx/certs/proxy.key
-      - ./certs/example-root.crt:/etc/nginx/certs/example-root.crt
+      - ./certs:/etc/nginx/certs:ro
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "8081:443"
     networks:
       - customnet
     depends_on:
       - loki
-        
+      - cert-gen
+  cert-gen:
+    image: alpine/openssl:latest
+    container_name: cert-gen
+    volumes:
+      - ./certs:/certs
+      - ./generate-certs.sh:/usr/local/bin/generate-certs.sh:ro
+    entrypoint: ["/bin/sh", "-c", "/usr/local/bin/generate-certs.sh"]
+    restart: "no"
+
+
 
 volumes:
   alloy_data:

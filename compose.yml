@@ -8,7 +8,7 @@ services:
     ports:
       - "12345:12345"
     volumes:
-      - ./certs/example.crt:/etc/certs/example.crt
+      - ./certs/example-root.crt:/etc/certs/example-root.crt
       - ./config/config.alloy:/etc/alloy/config.alloy
       - alloy_data:/var/lib/alloy/data
       - /:/rootfs:ro
@@ -65,7 +65,9 @@ services:
     container_name: proxy
     volumes:
       - ./config/nginx.conf:/etc/nginx/nginx.conf
-      - ./certs:/etc/nginx/certs
+      - ./certs/proxy.crt:/etc/nginx/certs/proxy.crt
+      - ./certs/proxy.key:/etc/nginx/certs/proxy.key
+      - ./certs/example-root.crt:/etc/nginx/certs/example-root.crt
     ports:
       - "8081:443"
     networks:

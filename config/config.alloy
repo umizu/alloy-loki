@@ -52,7 +52,7 @@ loki.write "default" {
     url = "https://proxy:443/loki/api/v1/push"
 
     tls_config {
-      ca_file = "/etc/certs/example.crt"
+      ca_file = "/etc/certs/example-root.crt"
       server_name = "proxy" // san
     }
   }

@@ -41,5 +41,4 @@ openssl x509 -req -in "$CERT_DIR/alloy.csr" \
   -days 365 -sha256 \
   -extfile <(echo "subjectAltName=DNS:proxy")
 
-# cleanup
 rm $CERT_DIR/proxy.csr $CERT_DIR/alloy.csr
